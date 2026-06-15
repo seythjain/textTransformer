@@ -93,7 +93,7 @@ class SelfAttention(nn.Module):
         self.emb_dim = emb_dim
 
     def forward(self, x):
-        x = torch.layer_norm(x, (self.emb_dim))
+        x = torch.nn.functional.layer_norm(x, (self.emb_dim,))
 
         # the query vectors
         Q = self.Wq(x)
@@ -133,6 +133,9 @@ class SelfAttention(nn.Module):
         mask = torch.tril(torch.ones(T, T, device=scores.device))
         mask = mask.masked_fill(mask == 0, float('-inf'))
 
+        # FIX: actually apply mask
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+
         # pretty simple, apply softmax function
         weights = torch.softmax(scores, dim=-1)
 
@@ -140,7 +143,7 @@ class SelfAttention(nn.Module):
         # add residual 
         #   the output = orig meaning + newly discovered meaning
         x = x + out
-        x = torch.layer_norm(x, (self.emb_dim))
+        x = torch.nn.functional.layer_norm(x, (self.emb_dim,))
 
         mlp_out = self.fc1(x)
         mlp_out = self.relu(mlp_out)
@@ -148,10 +151,10 @@ class SelfAttention(nn.Module):
 
         x = x + mlp_out
 
+        # take last token for prediction
         x = x[:, -1, :]   # (B, 32)
 
         logits = self.unembed(x)   # (B, vocab_size)
-
 
         return logits
 
@@ -160,6 +163,8 @@ class SelfAttention(nn.Module):
 attn = SelfAttention(embedding_dim)    
 
 optimizer = torch.optim.Adam(attn.parameters(), lr=1e-3)
+
+inv_vocab = {v: k for k, v in vocab.items()}
 
 if train:
     
@@ -226,19 +231,20 @@ else:
 
     num_new_words = int(input("Enter an integer number of new words to finish prompt: "))
 
-
     # switch model to inference mode
     attn.eval()
+
+    # convert prompt into ids (DO THIS ONCE, NOT EACH LOOP)
+    x = torch.tensor([[vocab[w] for w in prompt]])
+
+    print(" ".join(prompt), end=" ")
 
     for _ in range(num_new_words):
         # stops gradients from being tracked
         with torch.no_grad():
 
-            # convert prompt into ids
-            x = torch.tensor([[vocab[w] for w in prompt]])
-
             # forward pass
-            logits = attn.forward(x)
+            logits = attn(x)
 
             # probability distribution
             probs = torch.softmax(logits, dim=-1)
@@ -251,12 +257,6 @@ else:
 
             # append to sequence
             x = torch.cat([x, next_id.unsqueeze(0)], dim=1)
-    
-    # convert ids back to words
-    inv_vocab = {v:k for k,v in vocab.items()}
-    # print words
 
-    print(" ".join(prompt), end=" ")
-
-    for id in x[0]:
-        print(inv_vocab[id.item()], end=" ")
+            # print generated word
+            print(inv_vocab[next_word], end=" ")
