@@ -6,13 +6,21 @@ import torch
 import torch.nn as nn
 import math
 from torch.utils.data import Dataset, DataLoader
-from wordIds import vocab
 
-train = True
+train = False
 
+lines = open("train.txt", "r").readlines()
 
+vocab = {"<PAD>": 0}
 
-num_words = 99 # 99 words + PAD token
+num_words = 1
+
+for line in lines:
+    for word in line.strip().split():
+        if word not in vocab:
+            vocab[word] = num_words
+            num_words += 1
+
 
 # must add one because we need to account for the padding token
 num_tokens = num_words + 1  # PAD token included
@@ -215,7 +223,18 @@ if train:
     loader = DataLoader(ds, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
 
     for inputs, targets in loader:
-        logits = attn(inputs)
+        word_emb = emb(inputs)
+
+        B, T = inputs.shape
+
+        # make sure the shape of the input to the transformer is (B, T, D)
+        positions = torch.arange(T).unsqueeze(0).expand(B, T)
+        pos_vectors = pos_emb(positions)
+
+        # add the position embedding to the actual embedding
+        x = word_emb + pos_vectors
+
+        logits = attn(x)
 
         loss = criterion(logits, targets)
 
@@ -224,7 +243,6 @@ if train:
         optimizer.zero_grad()
 
         print(loss.item())
-
 else:
     prompt = input("Enter a prompt: ")
     prompt = prompt.split()
@@ -244,8 +262,16 @@ else:
         with torch.no_grad():
 
             # forward pass
-            logits = attn(x)
+            word_emb = emb(x)
 
+            B, T = x.shape
+
+            positions = torch.arange(T).unsqueeze(0).expand(B, T)
+            pos_vectors = pos_emb(positions)
+
+            x_emb = word_emb + pos_vectors
+
+            logits = attn(x_emb)
             # probability distribution
             probs = torch.softmax(logits, dim=-1)
 
