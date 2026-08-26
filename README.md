@@ -20,7 +20,7 @@ This project is primarily an educational implementation for displaying the funda
 
 ## Tech
 ### This model does not utilize many of the higher level torch.nn modules.
-####Examples:
+Examples:
   * nn.MultiheadAttention — would replace your manual Q/K/V projections, attention scores, masking, and head splitting.
   * nn.TransformerEncoderLayer — would provide an entire Transformer block, including attention, feed-forward layers, residual connections, and normalization.
   * nn.TransformerEncoder — would stack Transformer blocks for you.
