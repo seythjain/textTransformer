@@ -1,23 +1,34 @@
-You used PyTorch mostly at a low level for your SLM, so several higher-level modules could have simplified parts of it:
+# Small Language Model
 
-torch.nn.TransformerEncoder / TransformerEncoderLayer — would replace much of your manual transformer block work (self-attention, feed-forward layers, residual connections, and LayerNorm).
+A small language model built from scratch in **PyTorch** to explore how Transformer-based language models work.
+The goal is to build and show the core components of a language model rather than maximize performance. The model aims to use the torch.nn module as little as possible, to show how a transformer works.
 
-torch.nn.MultiheadAttention — would replace your custom Q/K/V attention implementation and masking logic.
+## Features
 
-torch.nn.Transformer — a full encoder-decoder transformer if you needed both sides.
+* Word-level tokenization
+* Learned word embeddings
+* Positional embeddings
+* Causal self-attention
+* Transformer architecture
+* Residual connections and LayerNorm
+* Next-token prediction
+* Training and text generation
 
-torch.nn.functional.pad — useful for handling variable-length sequences and padding instead of manually managing some shapes.
+## Goal
 
-torch.utils.data.DataLoader + a custom Dataset — you likely used DataLoader, but a cleaner Dataset abstraction could simplify tokenization, batching, and sequence sampling.
+This project is primarily an educational implementation for displaying the fundamentals of Transformers and small language models.
 
-torch.nn.CrossEntropyLoss — likely what you used for next-token prediction, but PyTorch also supports things like ignore_index to automatically ignore PAD tokens.
+## Tech
+### This model does not utilize many of the higher level torch.nn modules.
+####Examples:
+  * nn.MultiheadAttention — would replace your manual Q/K/V projections, attention scores, masking, and head splitting.
+  * nn.TransformerEncoderLayer — would provide an entire Transformer block, including attention, feed-forward layers, residual connections, and normalization.
+  * nn.TransformerEncoder — would stack Transformer blocks for you.
+  * nn.Dropout — helps reduce overfitting and is commonly used in Transformer models.
 
-torch.optim.AdamW — a standard optimizer for transformers with weight decay handled correctly.
+* Python
+* PyTorch
 
-torch.nn.Embedding — you already used this, but it is the standard replacement for manually managing token embeddings.
+## Status
 
-torch.nn.LayerNorm — if you implemented normalization manually, this would remove that complexity.
-
-torch.nn.Dropout — standard transformer regularization.
-
-The biggest simplifications would have been nn.MultiheadAttention and nn.TransformerEncoderLayer. However, writing them yourself was actually useful because it forced you to understand attention, masking, embeddings, and residual connections instead of hiding them behind PyTorch.
+Experimental — the model is intentionally small and is mainly intended for learning and experimentation. Although the model's training loop theoreticallly works, it needs some actual data to train on.
